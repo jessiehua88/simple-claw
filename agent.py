@@ -4,7 +4,8 @@ SimpleClaw - A minimal AI agent with tools and memory.
 """
 
 import os
-import json
+from datetime import datetime, timedelta
+from pathlib import Path
 from dotenv import load_dotenv
 from anthropic import Anthropic
 from rich.console import Console
@@ -20,8 +21,44 @@ load_dotenv()
 console = Console()
 client = Anthropic()
 
-# System prompt - customize this!
-SYSTEM_PROMPT = """You are a helpful AI assistant with access to tools.
+
+def load_soul() -> str:
+    """Load the agent's soul/personality from SOUL.md"""
+    soul_file = Path("SOUL.md")
+    if soul_file.exists():
+        return soul_file.read_text()
+    return ""
+
+
+def load_memories() -> str:
+    """Load MEMORY.md and recent daily memories."""
+    memories = []
+    
+    # Load long-term memory
+    memory_file = Path("MEMORY.md")
+    if memory_file.exists():
+        memories.append("## Long-Term Memory (MEMORY.md)\n" + memory_file.read_text())
+    
+    # Load today's and yesterday's notes
+    memory_dir = Path("memory")
+    if memory_dir.exists():
+        today = datetime.now().strftime("%Y-%m-%d")
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        for date in [yesterday, today]:
+            daily_file = memory_dir / f"{date}.md"
+            if daily_file.exists():
+                memories.append(f"## Notes from {date}\n" + daily_file.read_text())
+    
+    return "\n\n".join(memories) if memories else ""
+
+
+def build_system_prompt() -> str:
+    """Build the system prompt with soul and memories."""
+    soul = load_soul()
+    memories = load_memories()
+    
+    base_prompt = """You are an AI assistant with access to tools and persistent memory.
 
 You can:
 - Read and write files
@@ -29,10 +66,25 @@ You can:
 - Fetch content from URLs
 - Save and recall memories
 
-Be concise and helpful. When using tools, explain what you're doing briefly.
+When you learn something important, use save_memory to remember it.
+When you need to recall something, check your memories below or use read_memory.
 
 Current working directory: {cwd}
+Current time: {time}
 """
+    
+    prompt_parts = [base_prompt.format(
+        cwd=os.getcwd(),
+        time=datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
+    )]
+    
+    if soul:
+        prompt_parts.append("## Your Soul (Personality)\n" + soul)
+    
+    if memories:
+        prompt_parts.append("## Your Memories\n" + memories)
+    
+    return "\n\n".join(prompt_parts)
 
 def chat(messages: list[dict], model: str = "claude-sonnet-4-20250514") -> dict:
     """Send messages to Claude and handle tool use."""
@@ -40,7 +92,7 @@ def chat(messages: list[dict], model: str = "claude-sonnet-4-20250514") -> dict:
     response = client.messages.create(
         model=model,
         max_tokens=4096,
-        system=SYSTEM_PROMPT.format(cwd=os.getcwd()),
+        system=build_system_prompt(),
         tools=TOOLS,
         messages=messages
     )

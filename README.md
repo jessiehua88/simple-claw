@@ -6,7 +6,8 @@ A minimal AI agent with tools and memory. Think of it as a tiny, hackable versio
 
 - **Claude API** with function calling
 - **Tools:** read/write files, run commands, fetch URLs
-- **Memory:** simple file-based daily notes
+- **Persistent Memory:** MEMORY.md + daily notes loaded on startup
+- **Soul/Personality:** Customize via SOUL.md
 - **CLI interface** with rich formatting
 
 ## Quick Start
@@ -70,12 +71,25 @@ Edit `SYSTEM_PROMPT` in `agent.py` to change the agent's personality and instruc
 simple-claw/
 ├── agent.py          # Main chat loop and Claude integration
 ├── tools.py          # Tool definitions and implementations
+├── SOUL.md           # Agent's personality (edit this!)
+├── MEMORY.md         # Long-term memory
+├── memory/           # Daily notes (auto-created, gitignored)
 ├── requirements.txt  # Python dependencies
 ├── .env.example      # Example environment variables
 ├── .gitignore
-├── memory/           # Daily memory files (gitignored)
 └── README.md
 ```
+
+## Giving Your Agent a Soul
+
+Edit `SOUL.md` to define your agent's personality. This is loaded automatically on every conversation.
+
+Edit `MEMORY.md` to store long-term memories. The agent can also save daily notes using the `save_memory` tool, which go into `memory/YYYY-MM-DD.md`.
+
+On startup, the agent loads:
+1. `SOUL.md` (personality)
+2. `MEMORY.md` (long-term memory)
+3. Yesterday's and today's daily notes
 
 ## Ideas for Extension
 

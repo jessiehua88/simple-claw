@@ -2,5 +2,6 @@
 __pycache__/
 *.pyc
 .DS_Store
+# Daily notes are private, but SOUL.md and MEMORY.md are tracked
 memory/*.md
 !memory/.gitkeep
